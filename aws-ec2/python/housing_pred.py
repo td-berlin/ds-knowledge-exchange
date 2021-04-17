@@ -8,14 +8,16 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser(description="Example for DS Knowledge Sharing using AWS and EC2")
-parser.add_argument("-a", "--algorithm", required = True, choices=["linear", "svr"], default="linear",
-                    help="select an algorithm to benchmark [linear|svm]")
+parser.add_argument("-a", "--algorithm", required = True, choices=["linear", "svr", "tree"], default="linear",
+                    help="select an algorithm to benchmark [linear|svm|tree]")
 parser.add_argument("-v", "--verbose", default=0, help="Should I be verbose?")
-parser.add_argument("-p", "--path", required=True, help="Path and input")
+parser.add_argument("-p", "--input_path", required=True, help="Input path and file")
+parser.add_argument("-o", "--output_path", required=True, help="Output path and file")
 args = parser.parse_args()
 
 alg = args.algorithm
-path = args.path
+input_path = args.input_path
+output_path = args.output_path
 verbose = bool(int(args.verbose))
 
 # Input data files are available in the "../input/" directory.
@@ -23,7 +25,7 @@ verbose = bool(int(args.verbose))
 # Any results you write to the current directory are saved as output.
 #Lets load the dataset and sample some
 column_names = ['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 'DIS', 'RAD', 'TAX', 'PTRATIO', 'B', 'LSTAT', 'MEDV']
-data = pd.read_csv(path, header=None, delimiter=r"\s+", names=column_names)
+data = pd.read_csv(input_path, header=None, delimiter=r"\s+", names=column_names)
 
 column_sels = ['LSTAT', 'INDUS', 'NOX', 'PTRATIO', 'RM', 'TAX', 'DIS', 'AGE']
 x = data.loc[:,column_sels]
@@ -75,6 +77,20 @@ if(alg == 'svr'):
     scores = cross_val_score(svr_rbf, x_scaled, y, cv=kf, scoring='neg_mean_squared_error')
     scores_map['SVR'] = scores
 
+
+if(alg == 'tree'):
+    from sklearn.tree import DecisionTreeRegressor
+    
+    desc_tr = DecisionTreeRegressor(max_depth=5)
+    #grid_sv = GridSearchCV(desc_tr, cv=kf, param_grid={"max_depth" : [1, 2, 3, 4, 5, 6, 7]}, scoring='neg_mean_squared_error')
+    #grid_sv.fit(x_scaled, y)
+    #print("Best classifier :", grid_sv.best_estimator_)
+    scores = cross_val_score(desc_tr, x_scaled, y, cv=kf, scoring='neg_mean_squared_error')
+    scores_map['DecisionTreeRegressor'] = scores
+
 print("MSE: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std()))
 
+f = open(output_path, "a")
+f.write("MSE: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std()))
+f.close()
 
