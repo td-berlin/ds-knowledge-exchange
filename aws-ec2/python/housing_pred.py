@@ -8,8 +8,8 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser(description="Example for DS Knowledge Sharing using AWS and EC2")
-parser.add_argument("-a", "--algorithm", required = True, choices=["linear", "svr", "tree"], default="linear",
-                    help="select an algorithm to benchmark [linear|svm|tree]")
+parser.add_argument("-a", "--algorithm", required = True, choices=["linear","ridge","polyl2","svr", "tree"], default="linear",
+                    help="select an algorithm to benchmark [linear|svm|tree|ridge|polyl2]")
 parser.add_argument("-v", "--verbose", default=0, help="Should I be verbose?")
 parser.add_argument("-p", "--input_path", required=True, help="Input path and file")
 parser.add_argument("-o", "--output_path", required=True, help="Output path and file")
@@ -41,16 +41,19 @@ kf = KFold(n_splits=10)
 scores_map = {}
 if(alg == 'linear'):
     l_regression = linear_model.LinearRegression()
+    if(verbose): print('linear::Cross validating')
     scores = cross_val_score(l_regression, x_scaled, y, cv=kf, scoring='neg_mean_squared_error')
-    print("MSE: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std()))
     
     scores_map['LinearRegression'] = scores
+
+if(alg == 'ridge'):
     l_ridge = linear_model.Ridge()
-    if(verbose): print('linear::Cross validating')
+    if(verbose): print('ridge::Cross validating')
     scores = cross_val_score(l_ridge, x_scaled, y, cv=kf, scoring='neg_mean_squared_error')
+
     scores_map['Ridge'] = scores
-    print("MSE: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std()))
     
+if(alg == 'polyl2'):
     # Lets try polinomial regression with L2 with degree for the best fit
     from sklearn.pipeline import make_pipeline
     from sklearn.preprocessing import PolynomialFeatures
@@ -59,10 +62,9 @@ if(alg == 'linear'):
     #    scores = cross_val_score(model, x_scaled, y, cv=kf, scoring='neg_mean_squared_error')
     #    print("MSE: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std()))
     model = make_pipeline(PolynomialFeatures(degree=3), linear_model.Ridge())
-    if(verbose): print('linear::Cross validating with poly ridge')
+    if(verbose): print('polyl2::Cross validating')
     scores = cross_val_score(model, x_scaled, y, cv=kf, scoring='neg_mean_squared_error')
     scores_map['PolyRidge'] = scores
-
 
 if(alg == 'svr'):
     from sklearn.svm import SVR
